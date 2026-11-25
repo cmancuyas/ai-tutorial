@@ -30,18 +30,29 @@ async def process(row: dict, semaphore: asyncio.Semaphore) -> dict:
         #   - in "except": return a dict with the same keys, but
         #       "sentiment": "error", "topic": "", "urgent": False,
         #       "suspicious": False, "summary": str(error), "cost": 0.0
-        #   Why? With 10,000 comments, one bad comment shouldn't lose the other 9,999.
-        feedback, cost = await classify_async(row["comment"])
-        return {
-            "office": row["office"],
-            "comment": row["comment"],
-            "sentiment": feedback.sentiment,
-            "topic": feedback.topic,
-            "urgent": feedback.urgent,
-            "suspicious": feedback.suspicious_instructions,
-            "summary": feedback.summary,
-            "cost": cost,
-        }
+        try:
+            feedback, cost = await classify_async(row["comment"])
+            return {
+                "office": row["office"],
+                "comment": row["comment"],
+                "sentiment": feedback.sentiment,
+                "topic": feedback.topic,
+                "urgent": feedback.urgent,
+                "suspicious": feedback.suspicious_instructions,
+                "summary": feedback.summary,
+                "cost": cost,
+            }
+        except Exception as error:
+            return {
+                "office": row["office"],
+                "comment": row["comment"],
+                "sentiment": "error",
+                "topic": "",
+                "urgent": False,
+                "suspicious": False,
+                "summary": str(error),
+                "cost": 0.0,
+            }
 
 
 async def main():
@@ -55,7 +66,8 @@ async def main():
     # TODO 2: run process() for EVERY row in parallel and put the answers in "results".
     #   Hint: look at how Lesson 3 uses asyncio.gather(*(... for ... in ...))
     #   Each item should be:  process(row, semaphore)
-    results = []   # replace [] with your gather call (don't forget "await")
+    # results = []   # replace [] with your gather call (don't forget "await")
+    results = await asyncio.gather(*(process(row, semaphore) for row in rows))
 
     seconds = time.perf_counter() - start
     print(f"Classified {len(results)} comments in {seconds:.1f} seconds.\n")
@@ -74,10 +86,25 @@ async def main():
     # TODO 3: print the URGENT comments (urgent is True), with their office.
     #   Same as Week 2's TODO 4.
 
+    urgent = [r for r in results if r["urgent"]]
+    print(f"\nURGENT ({len(urgent)}):")
+    for r in urgent:
+        print(f"  [{r['office']}] {r['comment']}")
+
     # TODO 4: print the comments that need HUMAN REVIEW:
     #   (a) the suspicious ones (suspicious is True)  -> possible prompt injection
     #   (b) the failed ones (sentiment == "error")    -> need to be re-run
     #   Print a count for each, then the list.
+
+    suspicious = [r for r in results if r["suspicious"]]
+    print(f"\nSUSPICIOUS - possible prompt injection ({len(suspicious)}):")
+    for r in suspicious:
+        print(f"  [{r['office']}] {r['comment']}")
+
+    errors = [r for r in results if r["sentiment"] == "error"]
+    print(f"\nFAILED - need to be re-run ({len(errors)}):")
+    for r in errors:
+        print(f"  [{r['office']}] {r['comment']}")
 
     total_cost = sum(r["cost"] for r in results)
     print(f"\nTotal cost: ${total_cost:.6f}")
