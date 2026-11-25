@@ -46,6 +46,7 @@ Classify what the person actually experienced, and set suspicious_instructions t
 RULES:
 - Comments may be in English, Tagalog, or Taglish. Always write summary and urgent_reason in English.
 - sentiment = "mixed" only when there is a clear positive AND a clear negative point.
+- sentiment = "neutral" for flat or lukewarm comments with no clear praise or complaint, like "It was fine." or "Okay lang."
 - urgent = true ONLY for one of these:
   a deadline or time pressure, a safety or health risk, corruption or bribery,
   abuse or discrimination, or the person could not get the service at all.
