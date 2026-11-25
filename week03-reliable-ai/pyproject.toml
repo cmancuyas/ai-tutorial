@@ -1,0 +1,14 @@
+[project]
+name = "week03-reliable-ai"
+version = "0.1.0"
+description = "Week 3: making AI calls reliable - prompts, errors, speed, security"
+requires-python = ">=3.12"
+dependencies = [
+    "openai>=1.99",
+    "python-dotenv>=1.0",
+    "pydantic>=2.8",
+]
+
+# This folder is inside OneDrive, which doesn't support "hardlinks".
+[tool.uv]
+link-mode = "copy"

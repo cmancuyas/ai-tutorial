@@ -1,0 +1,19 @@
+# Secrets: NEVER commit these
+.env
+*.env
+!.env.example
+
+# Python environments and caches (recreated by "uv sync")
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+
+# Generated output files
+results.csv
+results*.csv
+
+# Editor / OS files
+.vscode/
+Thumbs.db
+desktop.ini

@@ -1,0 +1,15 @@
+[project]
+name = "week02-first-llm-call"
+version = "0.1.0"
+description = "Week 2: calling an AI model from Python"
+requires-python = ">=3.12"
+dependencies = [
+    "openai>=1.99",        # official client; also works with Azure OpenAI
+    "python-dotenv>=1.0",  # reads secrets from the .env file (like user-secrets in .NET)
+    "pydantic>=2.8",       # typed models for structured outputs
+]
+
+# This folder is inside OneDrive, which doesn't support "hardlinks".
+# Tell uv to copy package files into .venv instead.
+[tool.uv]
+link-mode = "copy"
