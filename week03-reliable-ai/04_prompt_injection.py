@@ -28,6 +28,7 @@ and you never let untrusted text trigger important actions without checks.
 
 from typing import Literal
 
+import openai
 from pydantic import BaseModel
 
 from ai_client import MODEL, client
@@ -66,14 +67,35 @@ ATTACKS = [
 ]
 # Two strings next to each other are joined automatically:  "abc " "def" == "abc def"
 
+# LAYER 5 (Azure, not our code): Azure's guardrails ("Prompt Shields") scan every
+# request for attacks. If they detect one, Azure REFUSES the call with a 400 error
+# whose code is "content_filter". That's a successful defense, so we catch it
+# and report "BLOCKED" instead of crashing.
+def blocked_by_azure(error: openai.BadRequestError) -> bool:
+    return error.code == "content_filter" or "content management policy" in str(error)
+
+
 for comment in ATTACKS:
-    weak = classify_vulnerable(comment)
-    strong, _ = classify(comment)
     print(f"Comment:    {comment[:90]}...")
-    print(f"VULNERABLE: sentiment={weak.sentiment:8} urgent={weak.urgent}")
-    print(f"DEFENDED:   sentiment={strong.sentiment:8} urgent={strong.urgent}  "
-          f"suspicious={strong.suspicious_instructions}")
-    print(f"            reason: {strong.urgent_reason}")
+
+    try:
+        weak = classify_vulnerable(comment)
+        print(f"VULNERABLE: sentiment={weak.sentiment:8} urgent={weak.urgent}")
+    except openai.BadRequestError as error:
+        if not blocked_by_azure(error):
+            raise                      # a different 400 error: a real bug, so show it
+        print("VULNERABLE: BLOCKED by Azure's content filter")
+
+    try:
+        strong, _ = classify(comment)
+        print(f"DEFENDED:   sentiment={strong.sentiment:8} urgent={strong.urgent}  "
+              f"suspicious={strong.suspicious_instructions}")
+        print(f"            reason: {strong.urgent_reason}")
+    except openai.BadRequestError as error:
+        if not blocked_by_azure(error):
+            raise
+        print("DEFENDED:   BLOCKED by Azure's content filter")
+
     print("-" * 70)
 
 
